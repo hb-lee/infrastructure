@@ -24,13 +24,15 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/statis)
 
 include_directories(${SECUREC_DIR}/include)
 include_directories(${ZLOG_DIR}/include)
+include_directories(${LIBNUMA_DIR}/include)
 
 link_directories(${ZLOG_DIR}/lib)
 link_directories(${SECUREC_DIR}/lib)
+link_directories(${LIBNUMA_DIR}/lib)
 
 #***********************************************************
 #***********************************************************
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 add_library(infra SHARED ${SRC_LIST})
-target_link_libraries(infra zlog securec pthread)
+target_link_libraries(infra zlog securec numa pthread)

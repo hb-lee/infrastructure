@@ -84,6 +84,7 @@ endif()
 
 set(ZLOG_DIR	${THIRD_PARTY}/zlog)
 set(SECUREC_DIR	${THIRD_PARTY}/securec)
+set(LIBNUMA_DIR	${THIRD_PARTY}/libnuma)
 
 #***********************************************************
 #***********************************************************

@@ -38,7 +38,8 @@ void        threadraw_wakeup        (threadraw_t    *thread);
 uint32_t    threadcount_recommend   (void);
 
 threadpool_t    *threadpool_create      (const char *name,
-                                        uint32_t    threads);
+                                        uint32_t    threads,
+                                        int         numaid);
 
 void        threadpool_destroy      (threadpool_t *pool);
 

@@ -7,6 +7,7 @@
 #include "spinlock.h"
 #include "list.h"
 #include "log.h"
+#include "numa.h"
 
 #include "securec.h"
 #include <pthread.h>
@@ -57,6 +58,7 @@ typedef struct
     bool            is_run;
     sem_t           sem;
 
+    int             numaid;
     uint32_t        jobs;
 }_thread_t;
 
@@ -156,6 +158,18 @@ static void *_thread_svc(void *args)
 {
     _thread_t *thread = (_thread_t *)args;
 
+    if (thread->numaid >= 0)
+    {
+        if (numa_available()) {
+            log_error("numa bind not support in current system");
+            return NULL;
+        }
+        int nums = numa_max_node();
+        if (0 != numa_run_on_node(thread->numaid % nums)) {
+            log_error("numa bind failed on %d", thread->numaid % nums);
+            return NULL;
+        }
+    }
     while (atomic_bool_cas(&thread->is_run, true, true, NULL))
     {
         /* 1. 判断线程是否需要睡眠 */
@@ -353,13 +367,18 @@ uint32_t threadcount_recommend()
     return (uint32_t)(cpu * ratio);
 }
 
-threadpool_t *threadpool_create(const char *name, unsigned int threads)
+threadpool_t *threadpool_create(const char *name, unsigned int threads, int nid)
 {
     /* 1. 参数调节及内存申请 */
     uint32_t count = threads;
     count = (count < MIN_THREADS) ? MIN_THREADS : count;
     count = (count > MAX_THREADS) ? MAX_THREADS : count;
 
+    if (nid >= 0 && numa_available() < 0)
+    {
+        log_error("numa bind not support in current system");
+        return NULL;
+    }
     size_t mem_size = sizeof(threadpool_t) + count * sizeof(_thread_t)
                     + count * sizeof(uint32_t);
     char *ptr = (char *)calloc(1, mem_size);
@@ -385,6 +404,7 @@ threadpool_t *threadpool_create(const char *name, unsigned int threads)
     {
         char _name[THD_NAME * 2] = {0};
         sprintf_s(_name, sizeof(_name), "%.8s%d", name, i);
+        pool->threads[i].numaid = nid;
         if (0 != _thread_start(&pool->threads[i], _name,
                                 &pool->threads[i], _thread_svc))
         {
